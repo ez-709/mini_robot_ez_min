@@ -1,25 +1,46 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Arduino_Eye.h>
 
-const int echoPin = 5;
-const int trigPin = 6;
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
 
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+// Глаза: (x, y, радиус_глаза, радиус_зрачка)
+Eye leftEye(40, 32, 20, 8);
+Eye rightEye(88, 32, 20, 8);
 
 void setup() {
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
-  Serial.begin(9600);
+    Serial.begin(115200);
+    
+    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+        Serial.println("OLED not found!");
+        for (;;); // зависнуть
+    }
+
+    display.clearDisplay();
+    display.display();
+    display.setTextColor(SSD1306_WHITE);
 }
 
 void loop() {
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
+    display.clearDisplay();
 
-  long duration = pulseIn(echoPin, HIGH);
-  float distance_mm = (duration * 0.343) / 2.0;
-  Serial.println((int)distance_mm);
+    leftEye.draw(&display);
+    rightEye.draw(&display);
 
-  delay(100); 
+    display.display();
+
+    delay(50);
+
+    // Моргаем раз в 3 секунды
+    static uint32_t lastBlink = 0;
+    if (millis() - lastBlink > 3000) {
+        leftEye.blink();
+        rightEye.blink();
+        lastBlink = millis();
+    }
 }
